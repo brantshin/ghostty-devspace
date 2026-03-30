@@ -7,7 +7,7 @@
 #   │          │ lazygit  │
 #   └──────────┴──────────┘
 
-VERSION="1.2.0"
+VERSION="1.3.0"
 SCRIPT_DIR="${0:a:h}"
 REPO_DIR="${SCRIPT_DIR:h}"
 CONFIGS_DIR="$REPO_DIR/configs"
@@ -76,13 +76,26 @@ do_sync() {
         exit 1
     fi
 
-    mkdir -p "$CONFIGS_DIR/ghostty/themes" "$CONFIGS_DIR/yazi"
+    mkdir -p "$CONFIGS_DIR/ghostty/themes" "$CONFIGS_DIR/yazi" "$CONFIGS_DIR/claude"
     local count=0
 
+    # Ghostty
     [[ -f "$HOME/.config/ghostty/config" ]] && cp "$HOME/.config/ghostty/config" "$CONFIGS_DIR/ghostty/config" && ((count++))
     [[ -d "$HOME/.config/ghostty/themes" ]] && cp -R "$HOME/.config/ghostty/themes"/ "$CONFIGS_DIR/ghostty/themes"/ && ((count++))
+
+    # Yazi
     [[ -f "$HOME/.config/yazi/yazi.toml" ]] && cp "$HOME/.config/yazi/yazi.toml" "$CONFIGS_DIR/yazi/yazi.toml" && ((count++))
     [[ -f "$HOME/.config/yazi/package.toml" ]] && cp "$HOME/.config/yazi/package.toml" "$CONFIGS_DIR/yazi/package.toml" && ((count++))
+
+    # Claude Code
+    [[ -f "$HOME/.claude/CLAUDE.md" ]] && cp "$HOME/.claude/CLAUDE.md" "$CONFIGS_DIR/claude/CLAUDE.md" && ((count++))
+    if [[ -f "$HOME/.claude/settings.json" ]]; then
+        # 过滤敏感字段：ANTHROPIC_AUTH_TOKEN / ANTHROPIC_BASE_URL 替换为占位提醒
+        sed -e 's/"ANTHROPIC_AUTH_TOKEN": *"[^"]*"/"ANTHROPIC_AUTH_TOKEN": "<请自行配置>"/' \
+            -e 's/"ANTHROPIC_BASE_URL": *"[^"]*"/"ANTHROPIC_BASE_URL": "<请自行配置>"/' \
+            "$HOME/.claude/settings.json" > "$CONFIGS_DIR/claude/settings.json"
+        ((count++))
+    fi
 
     echo "已同步 $count 项配置到 $CONFIGS_DIR"
     echo "下一步: cd $REPO_DIR && git add configs/ && git commit && git push"
@@ -191,6 +204,20 @@ do_setup() {
         fi
     fi
 
+    # Claude Code 配置
+    _section "Claude Code 配置"
+    if [[ -d "$CONFIGS_DIR/claude" ]]; then
+        mkdir -p "$HOME/.claude"
+        [[ -f "$CONFIGS_DIR/claude/CLAUDE.md" ]] && _copy_config "$CONFIGS_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+        [[ -f "$CONFIGS_DIR/claude/settings.json" ]] && _copy_config "$CONFIGS_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+        echo ""
+        echo "${YELLOW}  ⚠${RESET} 请手动编辑 ${BOLD}~/.claude/settings.json${RESET} 配置以下字段："
+        echo "    - ANTHROPIC_AUTH_TOKEN"
+        echo "    - ANTHROPIC_BASE_URL"
+    else
+        _ok "无 Claude Code 配置快照，跳过"
+    fi
+
     # 完成
     echo ""
     echo "${GREEN}${BOLD}部署完成！${RESET}"
@@ -221,7 +248,7 @@ devspace - 在 Ghostty 中一键创建开发工作区
 
 命令:
   setup [-f]     部署开发环境（安装依赖 + 配置），-f 强制覆盖
-  sync           将本机 ghostty/yazi 配置同步到仓库 configs/ 目录
+  sync           将本机 ghostty/yazi/claude 配置同步到仓库 configs/ 目录
 
 选项:
   -h, --help     显示帮助
