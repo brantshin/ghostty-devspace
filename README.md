@@ -23,7 +23,7 @@ cd ghostty-devspace
 已有 npm 的机器也可以：
 
 ```bash
-npm i -g @brant/devspace
+npm i -g @brantshi1/devspace
 devspace setup
 ```
 
