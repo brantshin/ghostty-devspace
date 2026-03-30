@@ -1,0 +1,31 @@
+theme = Afterglow
+font-family = JetBrainsMono Nerd Font Mono
+font-size = 15
+# font-thicken = true
+# adjust-cell-height = 20%
+
+# 透明度
+background-opacity = 0.75
+
+# 背景模糊
+background-blur-radius = 10
+
+# window-padding-x = 12
+# window-padding-y = 8
+# macos-titlebar-style = tabs
+
+# cursor-style = bar
+cursor-style-blink = true
+mouse-hide-while-typing = true
+copy-on-select = clipboard
+
+# 关闭非活动 split pane 的变暗效果
+unfocused-split-opacity = 1
+
+# 命令完成通知（窗口未聚焦时弹窗提醒）
+notify-on-command-finish = unfocused
+notify-on-command-finish-action = notify
+notify-on-command-finish-after = 5s
+
+# 确保链接点击功能开启
+link-url = true

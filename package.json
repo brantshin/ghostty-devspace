@@ -1,0 +1,25 @@
+{
+  "name": "@brant/devspace",
+  "version": "1.1.0",
+  "description": "Ghostty terminal workspace: claude + yazi + lazygit in split panes",
+  "bin": {
+    "devspace": "./bin/devspace"
+  },
+  "files": [
+    "bin/",
+    "configs/",
+    "setup.sh"
+  ],
+  "os": [
+    "darwin"
+  ],
+  "keywords": [
+    "ghostty",
+    "terminal",
+    "workspace",
+    "claude",
+    "yazi",
+    "lazygit"
+  ],
+  "license": "MIT"
+}

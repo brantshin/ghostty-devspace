@@ -1,0 +1,117 @@
+#!/usr/bin/env zsh
+# devspace - Ghostty 开发工作区
+#
+#   ┌──────────┬──────────┐
+#   │          │   yazi   │
+#   │  claude  ├──────────┤
+#   │          │ lazygit  │
+#   └──────────┴──────────┘
+
+VERSION="1.1.0"
+SCRIPT_DIR="${0:a:h}"
+REPO_DIR="${SCRIPT_DIR:h}"
+
+# ── sync 子命令 ──────────────────────────────────────
+do_sync() {
+    local configs_dir="$REPO_DIR/configs"
+
+    if [[ ! -f "$REPO_DIR/package.json" ]]; then
+        echo "错误: 无法定位 ghostty-devspace 仓库" >&2
+        echo "提示: 通过 npm link 安装时，sync 需要在仓库目录中运行" >&2
+        exit 1
+    fi
+
+    mkdir -p "$configs_dir/ghostty/themes" "$configs_dir/yazi"
+
+    local count=0
+
+    # Ghostty
+    if [[ -f "$HOME/.config/ghostty/config" ]]; then
+        cp "$HOME/.config/ghostty/config" "$configs_dir/ghostty/config"
+        ((count++))
+    fi
+    if [[ -d "$HOME/.config/ghostty/themes" ]]; then
+        cp -R "$HOME/.config/ghostty/themes"/ "$configs_dir/ghostty/themes"/
+        ((count++))
+    fi
+
+    # Yazi
+    if [[ -f "$HOME/.config/yazi/yazi.toml" ]]; then
+        cp "$HOME/.config/yazi/yazi.toml" "$configs_dir/yazi/yazi.toml"
+        ((count++))
+    fi
+    if [[ -f "$HOME/.config/yazi/package.toml" ]]; then
+        cp "$HOME/.config/yazi/package.toml" "$configs_dir/yazi/package.toml"
+        ((count++))
+    fi
+
+    echo "已同步 $count 项配置到 $configs_dir"
+    echo "下一步: cd $REPO_DIR && git add configs/ && git commit && git push"
+}
+
+case "$1" in
+    sync)
+        do_sync
+        exit 0
+        ;;
+    -h|--help)
+        cat <<'EOF'
+devspace - 在 Ghostty 中一键创建开发工作区
+
+用法: devspace [命令] [选项]
+
+在当前目录创建三栏布局:
+  左侧    claude (Claude Code)
+  右上    yazi   (文件管理器)
+  右下    lazygit (Git 客户端)
+
+命令:
+  sync           将本机 ghostty/yazi 配置同步到仓库 configs/ 目录
+
+选项:
+  -h, --help     显示帮助
+  -v, --version  显示版本
+
+要求:
+  - Ghostty 终端
+  - macOS 辅助功能权限 (System Events)
+  - claude, yazi, lazygit 已安装
+EOF
+        exit 0
+        ;;
+    -v|--version)
+        echo "devspace $VERSION"
+        exit 0
+        ;;
+esac
+
+if [[ "$TERM_PROGRAM" != "ghostty" ]]; then
+    echo "错误: 仅支持 Ghostty 终端" >&2
+    exit 1
+fi
+
+send() {
+    osascript -e "tell application \"System Events\" to $1"
+}
+
+# 右分割 → 右 pane 获得焦点
+send 'keystroke "d" using {command down}'
+sleep 0.8
+
+# 启动 yazi
+send 'keystroke "yazi"'
+sleep 0.15
+send 'key code 36'
+sleep 0.8
+
+# 下分割 → 右下 pane 获得焦点
+send 'keystroke "d" using {command down, shift down}'
+sleep 0.8
+
+# 启动 lazygit（焦点停留在此）
+send 'keystroke "lazygit"'
+sleep 0.15
+send 'key code 36'
+
+# 左 pane 启动 claude
+exec claude

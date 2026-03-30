@@ -1,0 +1,23 @@
+[mgr]
+ratio = [1, 3, 4]
+
+[opener]
+typora = [
+    { run = 'open -a Typora "$@"', orphan = true, desc = "Typora" },
+]
+edit = [
+    { run = 'open -a "Visual Studio Code" "$@"', orphan = true, desc = "VS Code" },
+]
+
+[open]
+prepend_rules = [
+    { name = "*.md", use = [ "typora", "edit", "reveal" ] },
+]
+
+[plugin]
+prepend_previewers = [
+    { name = "*.md", run = "rich-preview" },
+    { name = "*.csv", run = "rich-preview" },
+    { name = "*.rst", run = "rich-preview" },
+    { name = "*.ipynb", run = "rich-preview" },
+]
