@@ -1,6 +1,6 @@
 {
   "name": "@brant/devspace",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Ghostty terminal workspace: claude + yazi + lazygit in split panes",
   "bin": {
     "devspace": "./bin/devspace"

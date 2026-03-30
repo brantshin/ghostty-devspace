@@ -10,7 +10,7 @@
 └──────────┴──────────┘
 ```
 
-## 安装
+## 新机器安装
 
 ```bash
 git clone git@github.com:brantshin/ghostty-devspace.git
@@ -18,7 +18,14 @@ cd ghostty-devspace
 ./setup.sh
 ```
 
-`setup.sh` 会自动检查并安装所有依赖（Ghostty、字体、yazi、lazygit、Claude Code 等），并部署配置文件。
+会自动安装所有依赖并部署配置（Homebrew → Node.js → Ghostty → 字体 → yazi → 插件 → lazygit → Claude Code → devspace CLI）。
+
+已有 npm 的机器也可以：
+
+```bash
+npm i -g @brant/devspace
+devspace setup
+```
 
 ## 使用
 
@@ -33,6 +40,7 @@ devspace
 | 命令 | 说明 |
 |------|------|
 | `devspace` | 创建三栏工作区 |
+| `devspace setup [-f]` | 部署开发环境，`-f` 强制覆盖已有配置 |
 | `devspace sync` | 将本机配置同步到仓库 `configs/` 目录 |
 | `devspace -h` | 显示帮助 |
 
@@ -51,10 +59,8 @@ git add configs/ && git commit -m "update configs" && git push
 ```bash
 cd ~/ghostty-devspace
 git pull
-./setup.sh -f
+devspace setup -f
 ```
-
-`-f` 表示强制覆盖已有配置文件。
 
 ## 要求
 

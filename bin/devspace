@@ -7,49 +7,203 @@
 #   │          │ lazygit  │
 #   └──────────┴──────────┘
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 SCRIPT_DIR="${0:a:h}"
 REPO_DIR="${SCRIPT_DIR:h}"
+CONFIGS_DIR="$REPO_DIR/configs"
+
+# ── 颜色 ─────────────────────────────────────────────
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+_ok()   { echo "${GREEN}  ✓${RESET} $1" }
+_info() { echo "${YELLOW}  …${RESET} $1" }
+_fail() { echo "${RED}  ✗${RESET} $1" }
+_section() { echo "\n${BOLD}[$1]${RESET}" }
+
+# ── 工具函数 ─────────────────────────────────────────
+_copy_config() {
+    local src="$1" dst="$2"
+    if [[ -f "$dst" ]] && ! $FORCE; then
+        _ok "$dst 已存在（跳过，用 -f 强制覆盖）"
+        return 0
+    fi
+    mkdir -p "$(dirname "$dst")"
+    cp "$src" "$dst"
+    _ok "已复制 → $dst"
+}
+
+_copy_dir() {
+    local src="$1" dst="$2"
+    if [[ -d "$dst" ]] && ! $FORCE; then
+        _ok "$dst/ 已存在（跳过，用 -f 强制覆盖）"
+        return 0
+    fi
+    mkdir -p "$dst"
+    cp -R "$src"/ "$dst"/
+    _ok "已复制 → $dst/"
+}
+
+_ensure_brew_pkg() {
+    local pkg="$1"
+    if brew list "$pkg" &>/dev/null; then
+        _ok "$pkg 已安装"
+    else
+        _info "安装 $pkg …"
+        brew install "$pkg" || { _fail "$pkg 安装失败"; return 1; }
+        _ok "$pkg 安装完成"
+    fi
+}
+
+_ensure_brew_cask() {
+    local cask="$1"
+    if brew list --cask "$cask" &>/dev/null; then
+        _ok "$cask 已安装"
+    else
+        _info "安装 $cask …"
+        brew install --cask "$cask" || { _fail "$cask 安装失败"; return 1; }
+        _ok "$cask 安装完成"
+    fi
+}
 
 # ── sync 子命令 ──────────────────────────────────────
 do_sync() {
-    local configs_dir="$REPO_DIR/configs"
-
     if [[ ! -f "$REPO_DIR/package.json" ]]; then
         echo "错误: 无法定位 ghostty-devspace 仓库" >&2
-        echo "提示: 通过 npm link 安装时，sync 需要在仓库目录中运行" >&2
         exit 1
     fi
 
-    mkdir -p "$configs_dir/ghostty/themes" "$configs_dir/yazi"
-
+    mkdir -p "$CONFIGS_DIR/ghostty/themes" "$CONFIGS_DIR/yazi"
     local count=0
 
-    # Ghostty
-    if [[ -f "$HOME/.config/ghostty/config" ]]; then
-        cp "$HOME/.config/ghostty/config" "$configs_dir/ghostty/config"
-        ((count++))
-    fi
-    if [[ -d "$HOME/.config/ghostty/themes" ]]; then
-        cp -R "$HOME/.config/ghostty/themes"/ "$configs_dir/ghostty/themes"/
-        ((count++))
-    fi
+    [[ -f "$HOME/.config/ghostty/config" ]] && cp "$HOME/.config/ghostty/config" "$CONFIGS_DIR/ghostty/config" && ((count++))
+    [[ -d "$HOME/.config/ghostty/themes" ]] && cp -R "$HOME/.config/ghostty/themes"/ "$CONFIGS_DIR/ghostty/themes"/ && ((count++))
+    [[ -f "$HOME/.config/yazi/yazi.toml" ]] && cp "$HOME/.config/yazi/yazi.toml" "$CONFIGS_DIR/yazi/yazi.toml" && ((count++))
+    [[ -f "$HOME/.config/yazi/package.toml" ]] && cp "$HOME/.config/yazi/package.toml" "$CONFIGS_DIR/yazi/package.toml" && ((count++))
 
-    # Yazi
-    if [[ -f "$HOME/.config/yazi/yazi.toml" ]]; then
-        cp "$HOME/.config/yazi/yazi.toml" "$configs_dir/yazi/yazi.toml"
-        ((count++))
-    fi
-    if [[ -f "$HOME/.config/yazi/package.toml" ]]; then
-        cp "$HOME/.config/yazi/package.toml" "$configs_dir/yazi/package.toml"
-        ((count++))
-    fi
-
-    echo "已同步 $count 项配置到 $configs_dir"
+    echo "已同步 $count 项配置到 $CONFIGS_DIR"
     echo "下一步: cd $REPO_DIR && git add configs/ && git commit && git push"
 }
 
-case "$1" in
+# ── setup 子命令 ─────────────────────────────────────
+do_setup() {
+    FORCE=false
+    [[ "${1:-}" == "-f" ]] && FORCE=true
+
+    echo "${BOLD}devspace setup — Ghostty 开发环境部署${RESET}"
+
+    if [[ "$(uname)" != "Darwin" ]]; then
+        _fail "仅支持 macOS"; exit 1
+    fi
+    _ok "macOS $(sw_vers -productVersion)"
+
+    if [[ ! -d "$CONFIGS_DIR" ]]; then
+        _fail "找不到 configs/ 目录"; exit 1
+    fi
+    echo "配置源: $CONFIGS_DIR"
+
+    # Homebrew
+    _section "Homebrew"
+    if command -v brew &>/dev/null; then
+        _ok "Homebrew 已安装"
+    else
+        _info "安装 Homebrew …"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        [[ -f /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+        _ok "Homebrew 安装完成"
+    fi
+
+    # Ghostty
+    _section "Ghostty"
+    if command -v ghostty &>/dev/null || [[ -d "/Applications/Ghostty.app" ]]; then
+        _ok "Ghostty 已安装"
+    else
+        _ensure_brew_cask ghostty
+    fi
+
+    # 字体
+    _section "字体"
+    if fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font Mono" || \
+       ls ~/Library/Fonts/JetBrainsMonoNerdFontMono-Regular.ttf &>/dev/null; then
+        _ok "JetBrainsMono Nerd Font Mono 已安装"
+    else
+        _ensure_brew_cask font-jetbrains-mono-nerd-font
+    fi
+
+    # Ghostty 配置
+    _section "Ghostty 配置"
+    _copy_config "$CONFIGS_DIR/ghostty/config" "$HOME/.config/ghostty/config"
+    _copy_dir    "$CONFIGS_DIR/ghostty/themes" "$HOME/.config/ghostty/themes"
+
+    # Yazi
+    _section "Yazi"
+    _ensure_brew_pkg yazi
+
+    # Yazi 配置
+    _section "Yazi 配置"
+    _copy_config "$CONFIGS_DIR/yazi/yazi.toml"    "$HOME/.config/yazi/yazi.toml"
+    _copy_config "$CONFIGS_DIR/yazi/package.toml" "$HOME/.config/yazi/package.toml"
+
+    # Yazi 插件
+    _section "Yazi 插件"
+    if command -v ya &>/dev/null; then
+        _info "安装 yazi 插件（ya pkg install）…"
+        ya pkg install || { _fail "ya pkg install 失败"; }
+        _ok "yazi 插件安装完成"
+    else
+        _fail "ya 命令不存在，请手动运行: ya pkg install"
+    fi
+
+    # 插件依赖
+    _section "插件依赖"
+    _ensure_brew_pkg glow
+
+    if command -v rich &>/dev/null; then
+        _ok "rich-cli 已安装"
+    elif command -v pipx &>/dev/null; then
+        _info "安装 rich-cli（pipx）…"
+        pipx install rich-cli || { _fail "rich-cli 安装失败"; }
+        _ok "rich-cli 安装完成"
+    elif command -v pip3 &>/dev/null; then
+        _info "安装 rich-cli（pip3）…"
+        pip3 install rich-cli || { _fail "rich-cli 安装失败"; }
+        _ok "rich-cli 安装完成"
+    else
+        _fail "未找到 pipx 或 pip3，请手动安装 rich-cli"
+    fi
+
+    # devspace 依赖
+    _section "devspace 依赖"
+    _ensure_brew_pkg lazygit
+
+    if command -v claude &>/dev/null; then
+        _ok "Claude Code 已安装"
+    else
+        if command -v npm &>/dev/null; then
+            _info "安装 Claude Code …"
+            npm i -g @anthropic-ai/claude-code || { _fail "Claude Code 安装失败"; }
+            _ok "Claude Code 安装完成"
+        else
+            _fail "npm 未安装，请先安装 Node.js 后运行: npm i -g @anthropic-ai/claude-code"
+        fi
+    fi
+
+    # 完成
+    echo ""
+    echo "${GREEN}${BOLD}部署完成！${RESET}"
+    echo "打开 Ghostty 后运行 ${BOLD}devspace${RESET} 即可启动开发工作区。"
+}
+
+# ── 命令分发 ─────────────────────────────────────────
+case "${1:-}" in
+    setup)
+        shift
+        do_setup "$@"
+        exit 0
+        ;;
     sync)
         do_sync
         exit 0
@@ -66,6 +220,7 @@ devspace - 在 Ghostty 中一键创建开发工作区
   右下    lazygit (Git 客户端)
 
 命令:
+  setup [-f]     部署开发环境（安装依赖 + 配置），-f 强制覆盖
   sync           将本机 ghostty/yazi 配置同步到仓库 configs/ 目录
 
 选项:
