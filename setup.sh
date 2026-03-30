@@ -162,6 +162,7 @@ fi
 
 # ── 9. devspace 依赖 ─────────────────────────────────
 section "devspace 依赖"
+ensure_brew_pkg node
 ensure_brew_pkg lazygit
 
 if command -v claude &>/dev/null; then
