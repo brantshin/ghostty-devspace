@@ -176,6 +176,20 @@ else
     fi
 fi
 
+# ── 10. devspace CLI ──────────────────────────────────
+section "devspace CLI"
+if command -v devspace &>/dev/null; then
+    ok "devspace 已安装（$(devspace --version)）"
+else
+    if command -v npm &>/dev/null; then
+        info "npm link 安装 devspace …"
+        (cd "$SCRIPT_DIR" && npm link) || { fail "npm link 失败"; }
+        ok "devspace 安装完成"
+    else
+        fail "npm 未安装，请先安装 Node.js 后在仓库目录运行: npm link"
+    fi
+fi
+
 # ── 完成 ─────────────────────────────────────────────
 echo ""
 echo "${GREEN}${BOLD}部署完成！${RESET}"
