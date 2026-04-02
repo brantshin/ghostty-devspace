@@ -7,7 +7,7 @@
 #   │          │ lazygit  │
 #   └──────────┴──────────┘
 
-VERSION="1.3.1"
+VERSION="1.4.0"
 SCRIPT_DIR="${0:A:h}"
 REPO_DIR="${SCRIPT_DIR:h}"
 CONFIGS_DIR="$REPO_DIR/configs"
@@ -86,6 +86,9 @@ do_sync() {
     # Yazi
     [[ -f "$HOME/.config/yazi/yazi.toml" ]] && cp "$HOME/.config/yazi/yazi.toml" "$CONFIGS_DIR/yazi/yazi.toml" && ((count++))
     [[ -f "$HOME/.config/yazi/package.toml" ]] && cp "$HOME/.config/yazi/package.toml" "$CONFIGS_DIR/yazi/package.toml" && ((count++))
+
+    # Starship
+    [[ -f "$HOME/.config/starship.toml" ]] && cp "$HOME/.config/starship.toml" "$CONFIGS_DIR/starship.toml" && ((count++))
 
     # Claude Code
     [[ -f "$HOME/.claude/CLAUDE.md" ]] && cp "$HOME/.claude/CLAUDE.md" "$CONFIGS_DIR/claude/CLAUDE.md" && ((count++))
@@ -188,6 +191,14 @@ do_setup() {
         _fail "未找到 pipx 或 pip3，请手动安装 rich-cli"
     fi
 
+    # Starship
+    _section "Starship"
+    _ensure_brew_pkg starship
+
+    # Starship 配置
+    _section "Starship 配置"
+    [[ -f "$CONFIGS_DIR/starship.toml" ]] && _copy_config "$CONFIGS_DIR/starship.toml" "$HOME/.config/starship.toml"
+
     # devspace 依赖
     _section "devspace 依赖"
     _ensure_brew_pkg lazygit
@@ -248,7 +259,7 @@ devspace - 在 Ghostty 中一键创建开发工作区
 
 命令:
   setup [-f]     部署开发环境（安装依赖 + 配置），-f 强制覆盖
-  sync           将本机 ghostty/yazi/claude 配置同步到仓库 configs/ 目录
+  sync           将本机 ghostty/yazi/starship/claude 配置同步到仓库 configs/ 目录
 
 选项:
   -h, --help     显示帮助
