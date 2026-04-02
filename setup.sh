@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="${0:a:h}"
+SCRIPT_DIR="${0:A:h}"
 
 # 确保 Homebrew 可用
 if ! command -v brew &>/dev/null; then
